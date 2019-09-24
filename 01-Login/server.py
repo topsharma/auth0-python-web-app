@@ -1,5 +1,3 @@
-"""Python Flask WebApp Auth0 integration example
-"""
 from functools import wraps
 import json
 from os import environ as env
@@ -27,6 +25,9 @@ AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
 AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
 AUTH0_BASE_URL = 'https://' + AUTH0_DOMAIN
 AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
+TOPOPPS_DOMAIN = env.get(constants.TOPOPPS_DOMAIN)
+TOPOPPS_BASE_URL = 'https://' + TOPOPPS_DOMAIN
+
 if AUTH0_AUDIENCE is '':
     AUTH0_AUDIENCE = AUTH0_BASE_URL + '/userinfo'
 
@@ -103,9 +104,8 @@ def logout():
 @app.route('/dashboard')
 @requires_auth
 def dashboard():
-    return render_template('dashboard.html',
-                           userinfo=session[constants.PROFILE_KEY],
-                           userinfo_pretty=json.dumps(session[constants.JWT_PAYLOAD], indent=4))
+    userinfo = session[constants.JWT_PAYLOAD]
+    return redirect(TOPOPPS_BASE_URL + '?token='+userinfo['sub']+'&email='+userinfo['email'])
 
 
 if __name__ == "__main__":
