@@ -1,4 +1,5 @@
 from functools import wraps
+import requests
 import json
 from os import environ as env
 from werkzeug.exceptions import HTTPException
@@ -27,6 +28,7 @@ AUTH0_BASE_URL = 'https://' + AUTH0_DOMAIN
 AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
 TOPOPPS_DOMAIN = env.get(constants.TOPOPPS_DOMAIN)
 TOPOPPS_BASE_URL = 'https://' + TOPOPPS_DOMAIN
+TOPOPPS_CLIENT_SECRET = env.get(constants.TOPOPPS_CLIENT_SECRET)
 
 if AUTH0_AUDIENCE is '':
     AUTH0_AUDIENCE = AUTH0_BASE_URL + '/userinfo'
@@ -104,8 +106,18 @@ def logout():
 @app.route('/dashboard')
 @requires_auth
 def dashboard():
-    userinfo = session[constants.JWT_PAYLOAD]
-    return redirect(TOPOPPS_BASE_URL + '?token='+userinfo['sub']+'&email='+userinfo['email'])
+    user_info = session[constants.JWT_PAYLOAD]
+
+    url = TOPOPPS_BASE_URL + '/api/authorize_email_one_time_token_login'
+    params = {'secret_key': TOPOPPS_CLIENT_SECRET, 'email': user_info['email']}
+    token_response = requests.get(url=url, params=params, verify=False)
+
+    if token_response.ok:
+        json_data = json.loads(token_response.content)
+        params = {'token': json_data['token']}
+        return redirect(TOPOPPS_BASE_URL + '/api/login_with_onetime_token?' + urlencode(params))
+    else:
+        token_response.raise_for_status()
 
 
 if __name__ == "__main__":
